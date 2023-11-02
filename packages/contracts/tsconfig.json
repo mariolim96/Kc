@@ -1,0 +1,50 @@
+// {
+//     "compilerOptions": {
+//         "target": "es2020",
+//         "module": "commonjs",
+//         "moduleResolution": "node",
+//         "esModuleInterop": true,
+//         "forceConsistentCasingInFileNames": true,
+//         "strict": true,
+//         "skipLibCheck": true,
+//         "resolveJsonModule": true,
+//         "rootDirs": ["./contracts", "./scripts", "./test"]
+//     },
+//     "include": ["./test", "./scripts"],
+//     "exclude": ["node_modules"],
+//     "files": ["./hardhat.config.ts"]
+// }
+// {
+//     "compilerOptions": {
+//       "target": "ES2017",
+//       "module": "commonjs",
+//       "declaration": true,
+//       "declarationMap": true,
+//       "sourceMap": true,
+//       "outDir": "./dist",
+//     },
+//     "exclude": ["dist", "node_modules"],
+//     "include": ["./test", "./src", "./scripts"],
+//     "files": ["./hardhat.config.ts"]
+
+//   }
+
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "forceConsistentCasingInFileNames": true,
+        // "outDir": "./dist",
+        "strict": true,
+        "resolveJsonModule": true,
+        "rootDirs": ["./contracts", "./scripts", "./test"]
+    },
+    "exclude": ["dist", "node_modules"],
+    "include": ["./test", "./contracts", "./scripts"],
+    "files": ["./hardhat.config.ts"]
+}

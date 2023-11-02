@@ -1,0 +1,66 @@
+{
+    //   "extends": "@tsconfig/next/tsconfig.json",
+    "compilerOptions": {
+        "target": "es6",
+        "lib": ["dom", "dom.iterable", "esnext"],
+        "types": ["@types/node", "@types/react", "next/types/global", "node"],
+        "allowJs": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "noEmit": true,
+        "esModuleInterop": true,
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "jsx": "preserve",
+        "incremental": true,
+        "plugins": [
+            {
+                "name": "next"
+            }
+        ],
+        "paths": {
+            "@/*": ["./src/*"],
+            "components/*": ["./src/components/*"],
+            "hooks/*": ["./src/hooks/*"],
+            "context/*": ["./src/context/*"],
+            "utils/*": ["./src/utils/*"]
+            // "pages/*": ["./src/pages/*"],
+            // "styles/*": ["./src/styles/*"]
+        }
+    },
+    "ts-node": {
+        "require": ["tsconfig-paths/register"]
+    },
+    "include": ["next-env.d.ts", "src", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx"],
+    "exclude": ["node_modules", "prettier.config.js", "lint-staged.config.js"]
+}
+
+// {
+//     "compilerOptions": {
+//       "target": "es5",
+//       "lib": ["dom", "dom.iterable", "esnext"],
+//       "allowJs": true,
+//       "skipLibCheck": true,
+//       "strict": true,
+//       "noEmit": true,
+//       "esModuleInterop": true,
+//       "module": "esnext",
+//       "moduleResolution": "bundler",
+//       "resolveJsonModule": true,
+//       "isolatedModules": true,
+//       "jsx": "preserve",
+//       "incremental": true,
+//       "plugins": [
+//         {
+//           "name": "next"
+//         }
+//       ],
+//       "paths": {
+//         "@/*": ["./src/*"]
+//       }
+//     },
+//     "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+//     "exclude": ["node_modules"]
+//   }

@@ -1,0 +1,54 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": ["next", "airbnb", "airbnb-typescript", "plugin:tailwindcss/recommended", "prettier"],
+    "overrides": [
+        {
+            "env": {
+                "node": true
+            },
+            "files": [".eslintrc.{js,cjs}"],
+            "parserOptions": {
+                "sourceType": "script",
+                "project": "./tsconfig.json"
+            }
+        }
+    ],
+    "ignorePatterns": ["node_modules/", ".next/", "out/", "prettier.config.js"],
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module",
+        "project": "./packages/app/tsconfig.json" // if i have to use the parser i shoulde change this into ./packages/app/tsconfig.json why?
+    },
+    "plugins": ["react", "tailwindcss"],
+    "rules": {
+        "@next/next/no-html-link-for-pages": "off",
+        "react/jsx-key": "off",
+        "tailwindcss/no-custom-classname": "off",
+        "import/order": "off"
+    },
+    "settings": {
+        // is not working somehow
+        "import/resolver": {
+            "alias": {
+                "extensions": [".js", ".jsx"],
+                "map": [
+                    ["@", "./src"],
+                    ["components", "./src/components"],
+                    ["hooks", "./src/hooks"],
+                    ["context", "./src/context"],
+                    ["utils", "./src/utils"]
+                ]
+            }
+        },
+        "tailwindcss": {
+            "callees": ["cn"],
+            "config": "tailwind.config.ts"
+        },
+        "next": {
+            "rootDir": ["packages/app"]
+        }
+    }
+}
