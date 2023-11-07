@@ -16,7 +16,7 @@
         "dev": "yarn workspaces -pt run dev",
         "build": "yarn workspaces -pt run build",
         "test": "yarn workspaces -pt run test",
-        "build:contracts": "yarn workspaces contracts build"
+        "build:contracts": "yarn workspace contracts build"
     },
     "dependencies": {},
     "devDependencies": {}

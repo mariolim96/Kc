@@ -9,18 +9,11 @@ import './libraries/Strings.sol';
 import {ProjectData} from './types/CarbonProjectTypes.sol';
 
 import '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol';
 import {IAccessControlUpgradeable} from './interfaces/IAccessControlUpgradable.sol';
-
-// library Strings {
-//     function equals(string memory a, string memory b) internal pure returns (bool) {
-//         return (bytes(a).length == bytes(b).length) && (keccak256(bytes(a)) == keccak256(bytes(b)));
-//     }
-// }
 
 contract CarbonProject is
     ICarbonProjects,
@@ -38,11 +31,7 @@ contract CarbonProject is
     //      Constants
     // ----------------------------------------
 
-    /// @dev Version-related parameters. VERSION keeps track of production
-    /// releases. VERSION_RELEASE_CANDIDATE keeps track of iterations
-    /// of a VERSION in our staging environment.
-    // string public constant VERSION = '1.1.1';
-    // uint256 public constant VERSION_RELEASE_CANDIDATE = 1;
+    string public constant VERSION = '1.0';
 
     /// @dev All roles related to accessing this contract
     bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
@@ -79,7 +68,7 @@ contract CarbonProject is
     // ----------------------------------------
     //      Internal functions
     // ----------------------------------------
-    function setToucanContractRegistry(address _address) external virtual onlyOwner {
+    function setContractRegistry(address _address) external virtual onlyOwner {
         contractRegistry = _address;
     }
 
@@ -174,7 +163,7 @@ contract CarbonProject is
             ERC721Upgradeable.supportsInterface(interfaceId);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal virtual override {}
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
 }
 
 // import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';

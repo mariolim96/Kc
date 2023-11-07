@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: UNLICENSED
 
-pragma  solidity 0.8.20;
+pragma solidity 0.8.20;
 
 import '../types/CarbonOffsetBatchesTypes.sol';
 
@@ -12,7 +12,6 @@ abstract contract CarbonOffsetBatchesStorageV1 {
     /// @custom:oz-upgrades-renamed-from serialNumberExist
     mapping(string => bool) public serialNumberApproved;
     mapping(string => bool) private DEPRECATED_URIs;
-    mapping(address => bool) public verifiers; // has been removed, but must stay here because of storage layout
 
     string public baseURI;
     address public contractRegistry;
@@ -34,7 +33,4 @@ abstract contract CarbonOffsetBatchesStorageV2 {
     mapping(string => bool) public supportedRegistries;
 }
 
-abstract contract CarbonOffsetBatchesStorage is
-    CarbonOffsetBatchesStorageV1,
-    CarbonOffsetBatchesStorageV2
-{}
+abstract contract CarbonOffsetBatchesStorage is CarbonOffsetBatchesStorageV1, CarbonOffsetBatchesStorageV2 {}

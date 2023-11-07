@@ -10,11 +10,13 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import './interfaces/IRegistry.sol';
 import './storages/RegistryStorage.sol';
+import './interfaces/IPausable.sol';
 
 contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessControlUpgradeable, UUPSUpgradeable {
     // ----------------------------------------
     //      constants
     // ----------------------------------------
+    string public constant VERSION = '1.0';
     bytes32 public constant PAUSER_ROLE = keccak256('PAUSER_ROLE');
 
     // ----------------------------------------
@@ -41,6 +43,7 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
     // ----------------------------------------
     //      Constructor
     // ----------------------------------------
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -48,27 +51,108 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
     function initialize() external virtual initializer {
         __AccessControl_init_unchained();
         __UUPSUpgradeable_init_unchained();
+        __Ownable_init(msg.sender);
 
         /// @dev granting the deployer==owner the rights to grant other roles
-        __Ownable_init(msg.sender);
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
     }
-
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
 
     // ----------------------------------------
     //      Internal functions
+    // ----------------------------------------
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
+
+    // ----------------------------------------
+    //      setter
     // ----------------------------------------
     function setCarbonProjectsAddress(address _address) external virtual onlyOwner {
         require(_address != address(0), 'Zero address');
         _carbonProjectsAddress = _address;
     }
 
+    function setCarbonProjectVintagesAddress(address _address) external virtual onlyOwner {
+        require(_address != address(0), 'Zero address');
+        _carbonProjectVintagesAddress = _address;
+    }
+
+    function setCarbonTokenizerAddress(address _address) external virtual onlyOwner {
+        require(_address != address(0), 'Zero address');
+        _carbonTokenizerAddress = _address;
+    }
+
+    function setCarbonOffsetTokenAddress(address _address) external virtual onlyOwner {
+        require(_address != address(0), 'Zero address');
+        _carbonOffsetTokenAddress = _address;
+    }
+
+    function setCarbonOffsetTokenFactoryAddress(address _address) external virtual onlyOwner {
+        require(_address != address(0), 'Zero address');
+        _carbonOffsetTokenFactoryAddress = _address;
+    }
+
+    function setRetirementCertificatesAddress(address _address) external virtual onlyOwner {
+        require(_address != address(0), 'Zero address');
+        _retirementCertificatesAddress = _address;
+    }
+
     // ----------------------------------------
-    //      External functions
+    //      getter
     // ----------------------------------------
     function carbonProjectsAddress() external view override returns (address) {
         return _carbonProjectsAddress;
+    }
+
+    function carbonProjectVintagesAddress() external view override returns (address) {
+        return _carbonProjectVintagesAddress;
+    }
+
+    function carbonTokenizerAddress() external view override returns (address) {
+        return _carbonTokenizerAddress;
+    }
+
+    function carbonOffsetTokenAddress() external view override returns (address) {
+        return _carbonOffsetTokenAddress;
+    }
+
+    function carbonOffsetTokenFactoryAddress() external view override returns (address) {
+        return _carbonOffsetTokenFactoryAddress;
+    }
+
+    function retirementCertificatesAddress() external view override returns (address) {
+        return _retirementCertificatesAddress;
+    }
+
+    // ----------------------------------------
+    //      Pausing
+    // ----------------------------------------
+    //     /// @notice security function that pauses all contracts part of the carbon bridge
+    function pauseSystem() external onlyPausers {
+        IPausable cpv = IPausable(_carbonProjectVintagesAddress);
+        if (!cpv.paused()) cpv.pause();
+
+        IPausable cp = IPausable(_carbonProjectsAddress);
+        if (!cp.paused()) cp.pause();
+
+        IPausable cob = IPausable(_carbonOffsetTokenAddress);
+        if (!cob.paused()) cob.pause();
+    }
+
+    /// @notice security function that unpauses all contracts part of the carbon bridge
+    function unpauseSystem() external onlyOwner {
+        IPausable cpv = IPausable(_carbonProjectVintagesAddress);
+        if (cpv.paused()) cpv.unpause();
+
+        IPausable cp = IPausable(_carbonProjectsAddress);
+        if (cp.paused()) cp.unpause();
+
+        IPausable cob = IPausable(_carbonOffsetTokenAddress);
+        if (cob.paused()) cob.unpause();
+    }
+
+    // adding only protection
+    function addERC20(address erc20) external virtual {
+        projectVintageERC20Registry[erc20] = true;
     }
 }
 
@@ -92,7 +176,6 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //     uint256 public constant VERSION_RELEASE_CANDIDATE = 1;
 
 //     /// @dev All roles related to accessing this contract
-//     bytes32 public constant PAUSER_ROLE = keccak256('PAUSER_ROLE');
 
 //     // ----------------------------------------
 //     //      Events
@@ -105,87 +188,9 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //         _disableInitializers();
 //     }
 
-//     /// @notice security function that pauses all contracts part of the carbon bridge
-//     function pauseSystem() external onlyPausers {
-//         IPausable cpv = IPausable(_carbonProjectVintagesAddress);
-//         if (!cpv.paused()) cpv.pause();
-
-//         IPausable cp = IPausable(_carbonProjectsAddress);
-//         if (!cp.paused()) cp.pause();
-
-//         IPausable cob = IPausable(_carbonOffsetBatchesAddress);
-//         if (!cob.paused()) cob.pause();
-
-//         uint256 standardRegistriesLen = standardRegistries.length;
-//         //slither-disable-next-line uninitialized-local
-//         for (uint256 i; i < standardRegistriesLen; ) {
-//             string memory standardRegistry = standardRegistries[i];
-//             address factory = toucanCarbonOffsetFactories[standardRegistry];
-
-//             IPausable tcof = IPausable(factory);
-//             if (!tcof.paused()) tcof.pause();
-
-//             unchecked {
-//                 ++i;
-//             }
-//         }
-//     }
-
-//     /// @notice security function that unpauses all contracts part of the carbon bridge
-//     function unpauseSystem() external onlyOwner {
-//         IPausable cpv = IPausable(_carbonProjectVintagesAddress);
-//         if (cpv.paused()) cpv.unpause();
-
-//         IPausable cp = IPausable(_carbonProjectsAddress);
-//         if (cp.paused()) cp.unpause();
-
-//         IPausable cob = IPausable(_carbonOffsetBatchesAddress);
-//         if (cob.paused()) cob.unpause();
-
-//         uint256 standardRegistriesLen = standardRegistries.length;
-//         //slither-disable-next-line uninitialized-local
-//         for (uint256 i; i < standardRegistriesLen; ) {
-//             string memory standardRegistry = standardRegistries[i];
-//             address factory = toucanCarbonOffsetFactories[standardRegistry];
-
-//             IPausable tcof = IPausable(factory);
-//             if (tcof.paused()) tcof.unpause();
-
-//             unchecked {
-//                 ++i;
-//             }
-//         }
-//     }
-
 //     // ----------------------------------------
 //     //              Setters
 //     // ----------------------------------------
-//     function setCarbonOffsetBatchesAddress(address _address)
-//         external
-//         virtual
-//         onlyOwner
-//     {
-//         require(_address != address(0), 'Zero address');
-//         _carbonOffsetBatchesAddress = _address;
-//     }
-
-//     function setCarbonProjectsAddress(address _address)
-//         external
-//         virtual
-//         onlyOwner
-//     {
-//         require(_address != address(0), 'Zero address');
-//         _carbonProjectsAddress = _address;
-//     }
-
-//     function setCarbonProjectVintagesAddress(address _address)
-//         external
-//         virtual
-//         onlyOwner
-//     {
-//         require(_address != address(0), 'Zero address');
-//         _carbonProjectVintagesAddress = _address;
-//     }
 
 //     function setToucanCarbonOffsetsFactoryAddress(address tco2Factory)
 //         external
@@ -208,53 +213,9 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //         emit TCO2FactoryAdded(tco2Factory, standardRegistry);
 //     }
 
-//     function standardRegistryExists(string memory standard)
-//         private
-//         view
-//         returns (bool)
-//     {
-//         uint256 standardRegistriesLen = standardRegistries.length;
-//         //slither-disable-next-line uninitialized-local
-//         for (uint256 i; i < standardRegistriesLen; ) {
-//             if (standardRegistries[i].equals(standard)) {
-//                 return true;
-//             }
-
-//             unchecked {
-//                 ++i;
-//             }
-//         }
-//         return false;
-//     }
-
-//     function setToucanCarbonOffsetsEscrowAddress(address _address)
-//         external
-//         virtual
-//         onlyOwner
-//     {
-//         require(_address != address(0), 'Zero address');
-//         _toucanCarbonOffsetsEscrowAddress = _address;
-//     }
-
-//     function setRetirementCertificatesAddress(address _address)
-//         external
-//         virtual
-//         onlyOwner
-//     {
-//         require(_address != address(0), 'Zero address');
-//         _retirementCertificatesAddress = _address;
-//     }
-
 //     /// Add valid TCO2 contracts for Verra
 //     /// TODO: Kept for backwards-compatibility; will be removed in a future
 //     /// upgrade in favor of addERC20(erc20, 'verra')
-//     function addERC20(address erc20)
-//         external
-//         virtual
-//         onlyBy(DEPRECATED_toucanCarbonOffsetsFactoryAddress, owner())
-//     {
-//         projectVintageERC20Registry[erc20] = true;
-//     }
 
 //     /// @notice Keep track of TCO2s per standard
 //     function addERC20(address erc20, string calldata standardRegistry)
@@ -268,36 +229,6 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //     // ----------------------------------------
 //     //              Getters
 //     // ----------------------------------------
-
-//     function carbonOffsetBatchesAddress()
-//         external
-//         view
-//         virtual
-//         override
-//         returns (address)
-//     {
-//         return _carbonOffsetBatchesAddress;
-//     }
-
-//     function carbonProjectsAddress()
-//         external
-//         view
-//         virtual
-//         override
-//         returns (address)
-//     {
-//         return _carbonProjectsAddress;
-//     }
-
-//     function carbonProjectVintagesAddress()
-//         external
-//         view
-//         virtual
-//         override
-//         returns (address)
-//     {
-//         return _carbonProjectVintagesAddress;
-//     }
 
 //     /// Returns the TCO2 factory for Verra
 //     /// TODO: Kept for backwards-compatibility; will be removed in a future
@@ -343,16 +274,6 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //         return _retirementCertificatesAddress;
 //     }
 
-//     function retirementCertificatesAddress()
-//         external
-//         view
-//         virtual
-//         override
-//         returns (address)
-//     {
-//         return _retirementCertificatesAddress;
-//     }
-
 //     /// TODO: Kept for backwards-compatibility; will be removed in a future
 //     /// upgrade in favor of isValidERC20(erc20)
 //     function checkERC20(address erc20) external view virtual returns (bool) {
@@ -368,12 +289,3 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //     {
 //         return projectVintageERC20Registry[erc20];
 //     }
-
-//     function supportedStandardRegistries()
-//         external
-//         view
-//         returns (string[] memory)
-//     {
-//         return standardRegistries;
-//     }
-// }

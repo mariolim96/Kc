@@ -6,15 +6,11 @@
 pragma solidity 0.8.20;
 
 import '../interfaces/IRegistry.sol';
-import '../interfaces/ICarbonProjectVintages.sol';
+import '../interfaces/IProjectVintages.sol';
 
 contract ProjectVintageUtils {
     function checkProjectVintageTokenExists(address contractRegistry, uint256 tokenId) internal virtual {
-        // address c = IRegistry(contractRegistry)
-        //     .carbonProjectVintagesAddress();
-        // require(
-        //     ICarbonProjectVintages(c).exists(tokenId),
-        //     'Carbon project vintage does not yet exist'
-        // );
+        address c = IRegistry(contractRegistry).carbonProjectVintagesAddress();
+        require(IProjectVintages(c).exists(tokenId), 'Carbon project vintage does not yet exist');
     }
 }
