@@ -7,26 +7,30 @@ import {VintageData} from './types/VintageData.sol';
 import {ProjectVintagesStorage} from './storages/ProjectVintages.storage.sol';
 import './libraries/Modifiers.sol';
 import './libraries/ProjectUtils.sol';
-
+import {IAccessControlUpgradeable} from './interfaces/IAccessControlUpgradable.sol';
 import './interfaces/IRegistry.sol';
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+
 import '@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
-import {IAccessControlUpgradeable} from './interfaces/IAccessControlUpgradable.sol';
 
-abstract contract ProjectVintages is
+import '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+
+contract ProjectVintages is
     ProjectVintagesStorage,
     ERC721Upgradeable,
     OwnableUpgradeable,
-    PausableUpgradeable,
     IAccessControlUpgradeable,
     AccessControlUpgradeable,
     UUPSUpgradeable,
     Modifiers,
     ProjectUtils,
-    IProjectVintages
+    IProjectVintages,
+    ERC721PausableUpgradeable
 {
     string public constant VERSION = '1.0';
     bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
@@ -39,20 +43,36 @@ abstract contract ProjectVintages is
     // ----------------------------------------
     //      Upgradable related functions
     // ----------------------------------------
-    // @custom:oz-upgrades-unsafe-allow constructor
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    function initialize() external virtual initializer {
+    function initialize() public initializer {
         __Context_init_unchained();
-        __ERC721_init_unchained('Toucan Protocol: Carbon Project Vintages', 'TOUCAN-CPV');
+        __ERC721_init_unchained('Kyklos Project vintages', 'KCPV');
         __Ownable_init_unchained(msg.sender);
-        __Pausable_init_unchained();
+        __ERC721Pausable_init();
         __AccessControl_init_unchained();
         __UUPSUpgradeable_init_unchained();
         /// @dev granting the deployer==owner the rights to grant other roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
+    function _update(
+        address to,
+        uint256 tokenId,
+        address auth
+    ) internal override(ERC721Upgradeable, ERC721PausableUpgradeable) returns (address) {
+        return super._update(to, tokenId, auth);
     }
 
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
@@ -78,7 +98,7 @@ abstract contract ProjectVintages is
     // ----------------------------------------
     //      Internal functions
     // ----------------------------------------
-    function setToucanContractRegistry(address _address) external virtual onlyOwner {
+    function setRegistry(address _address) external virtual onlyOwner {
         contractRegistry = _address;
     }
 

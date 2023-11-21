@@ -19,6 +19,8 @@ import './storages/CarbonOffsetFactoryStorage.sol';
 import './interfaces/ICarbonTokenizer.sol';
 import './interfaces/IPausable.sol';
 
+import './interfaces/ICarbonOffsetFactory.sol';
+
 contract CarbonOffsetFactory is
     OwnableUpgradeable,
     PausableUpgradeable,
@@ -26,7 +28,8 @@ contract CarbonOffsetFactory is
     AccessControlUpgradeable,
     CarbonOffsetFactoryStorage,
     Modifiers,
-    ProjectVintageUtils
+    ProjectVintageUtils,
+    ICarbonOffsetsFactory
 {
     // ----------------------------------------
     //      Constants
@@ -78,6 +81,14 @@ contract CarbonOffsetFactory is
         contractRegistry = _address;
     }
 
+    function pvIdtoERC20(uint256 pvId) external view override returns (address) {
+        return _pvIdtoERC20[pvId];
+    }
+
+    function owner() public view override(ICarbonOffsetsFactory, OwnableUpgradeable) returns (address) {
+        return super.owner();
+    }
+
     /// @notice internal factory function to deploy new TCO2 (ERC20) contracts
     /// @dev the function creates a new BeaconProxy for each TCO2
     /// @param projectVintageTokenId links the vintage-specific data to the TCO2 contract
@@ -102,14 +113,14 @@ contract CarbonOffsetFactory is
         IRegistry(contractRegistry).addERC20(address(proxyTCO2));
 
         deployedContracts.push(address(proxyTCO2));
-        pvIdtoERC20[projectVintageTokenId] = address(proxyTCO2);
+        _pvIdtoERC20[projectVintageTokenId] = address(proxyTCO2);
 
         emit TokenCreated(projectVintageTokenId, address(proxyTCO2));
     }
 
     /// @dev Checks if same project vintage has already been deployed
     function checkExistence(uint256 projectVintageTokenId) internal view virtual returns (bool) {
-        if (pvIdtoERC20[projectVintageTokenId] == address(0)) {
+        if (_pvIdtoERC20[projectVintageTokenId] == address(0)) {
             return false;
         } else {
             return true;
@@ -137,70 +148,52 @@ contract CarbonOffsetFactory is
     function unpause() external virtual onlyBy(contractRegistry, owner()) {
         _unpause();
     }
+
+    function bridgeFeeReceiverAddress() external view virtual returns (address) {
+        return bridgeFeeReceiver;
+    }
+
+    function getBridgeFeeAndBurnAmount(uint256 _quantity) external view virtual returns (uint256, uint256) {
+        //slither-disable-next-line divide-before-multiply
+        uint256 feeAmount = (_quantity * bridgeFeePercentageInBase) / bridgeFeeDivider;
+        //slither-disable-next-line divide-before-multiply
+        uint256 burnAmount = (feeAmount * bridgeFeeBurnPercentageInBase) / bridgeFeeDivider;
+        return (feeAmount, burnAmount);
+    }
+
+    /// @notice Update the bridge fee percentage
+    /// @param _bridgeFeePercentageInBase percentage of bridge fee in base
+    function setBridgeFeePercentage(uint256 _bridgeFeePercentageInBase) external virtual onlyOwner {
+        require(
+            _bridgeFeePercentageInBase < bridgeFeeDivider,
+            'bridge fee percentage must be lower than bridge fee divider'
+        );
+        bridgeFeePercentageInBase = _bridgeFeePercentageInBase;
+    }
+
+    /// @notice Update the bridge fee receiver
+    /// @param _bridgeFeeReceiver address to transfer the fees
+    function setBridgeFeeReceiver(address _bridgeFeeReceiver) external virtual onlyOwner {
+        bridgeFeeReceiver = _bridgeFeeReceiver;
+    }
+
+    /// @notice Update the bridge fee burning percentage
+    /// @param _bridgeFeeBurnPercentageInBase percentage of bridge fee in base
+    function setBridgeFeeBurnPercentage(uint256 _bridgeFeeBurnPercentageInBase) external virtual onlyOwner {
+        require(
+            _bridgeFeeBurnPercentageInBase < bridgeFeeDivider,
+            'burn fee percentage must be lower than bridge fee divider'
+        );
+        bridgeFeeBurnPercentageInBase = _bridgeFeeBurnPercentageInBase;
+    }
+
+    /// @notice Update the bridge fee burn address
+    /// @param _bridgeFeeBurnAddress address to transfer the fees to burn
+    function setBridgeFeeBurnAddress(address _bridgeFeeBurnAddress) external virtual onlyOwner {
+        bridgeFeeBurnAddress = _bridgeFeeBurnAddress;
+    }
+
+    function getBridgeFeeBurnAddress() external view virtual returns (address) {
+        return bridgeFeeBurnAddress;
+    }
 }
-
-// /// @notice This TCO2 factory base should be used for any logic specific implementation
-// abstract contract ToucanCarbonOffsetsFactoryBase is
-//     OwnableUpgradeable,
-//     PausableUpgradeable,
-//     UUPSUpgradeable,
-//     ProjectUtils,
-//     ProjectVintageUtils,
-//     Modifiers,
-//     AccessControlUpgradeable
-// {
-
-//     // ----------------------------------------
-//     //           Admin functions
-//     // ----------------------------------------
-
-//     /// @dev set the registry contract to be tracked
-
-//     // ----------------------------------------
-//     //       Permissionless functions
-//     // ----------------------------------------
-
-//     function bridgeFeeReceiverAddress() external view virtual returns (address) {
-//         return bridgeFeeReceiver;
-//     }
-
-//     function getBridgeFeeAndBurnAmount(uint256 _quantity) external view virtual returns (uint256, uint256) {
-//         //slither-disable-next-line divide-before-multiply
-//         uint256 feeAmount = (_quantity * bridgeFeePercentageInBase) / bridgeFeeDivider;
-//         //slither-disable-next-line divide-before-multiply
-//         uint256 burnAmount = (feeAmount * bridgeFeeBurnPercentageInBase) / bridgeFeeDivider;
-//         return (feeAmount, burnAmount);
-//     }
-
-//     /// @notice Update the bridge fee percentage
-//     /// @param _bridgeFeePercentageInBase percentage of bridge fee in base
-//     function setBridgeFeePercentage(uint256 _bridgeFeePercentageInBase) external virtual onlyOwner {
-//         require(
-//             _bridgeFeePercentageInBase < bridgeFeeDivider,
-//             'bridge fee percentage must be lower than bridge fee divider'
-//         );
-//         bridgeFeePercentageInBase = _bridgeFeePercentageInBase;
-//     }
-
-//     /// @notice Update the bridge fee receiver
-//     /// @param _bridgeFeeReceiver address to transfer the fees
-//     function setBridgeFeeReceiver(address _bridgeFeeReceiver) external virtual onlyOwner {
-//         bridgeFeeReceiver = _bridgeFeeReceiver;
-//     }
-
-//     /// @notice Update the bridge fee burning percentage
-//     /// @param _bridgeFeeBurnPercentageInBase percentage of bridge fee in base
-//     function setBridgeFeeBurnPercentage(uint256 _bridgeFeeBurnPercentageInBase) external virtual onlyOwner {
-//         require(
-//             _bridgeFeeBurnPercentageInBase < bridgeFeeDivider,
-//             'burn fee percentage must be lower than bridge fee divider'
-//         );
-//         bridgeFeeBurnPercentageInBase = _bridgeFeeBurnPercentageInBase;
-//     }
-
-//     /// @notice Update the bridge fee burn address
-//     /// @param _bridgeFeeBurnAddress address to transfer the fees to burn
-//     function setBridgeFeeBurnAddress(address _bridgeFeeBurnAddress) external virtual onlyOwner {
-//         bridgeFeeBurnAddress = _bridgeFeeBurnAddress;
-//     }
-// }

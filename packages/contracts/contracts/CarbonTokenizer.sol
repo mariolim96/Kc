@@ -111,7 +111,11 @@ contract CarbonTokenizerContract is
             //create the batch of vintages
             uint256 tokenId = _projectVintageTokenizedCounter++;
             _safeMint(msg.sender, tokenId);
-            projectVintageTokenized[vintageTokenId] = batchTokenized(tokenId, Status.fractionalized);
+            projectVintageTokenized[vintageTokenId] = batchTokenized(
+                tokenId,
+                Status.fractionalized,
+                vintageData.totalVintageQuantity
+            );
             vintageTokenIdToTokenizedId[vintageTokenId] = tokenId;
             // we need to finish the minting of the ERC20 with the factory
             emit ProjectVintageTokenizedEvent(tokenId, vintageTokenId, vintageData.totalVintageQuantity);
@@ -138,5 +142,12 @@ contract CarbonTokenizerContract is
 
     function getTokenIdByVintageTokenId(uint256 vintageTokenId) public view returns (uint256) {
         return vintageTokenIdToTokenizedId[vintageTokenId];
+    }
+
+    function getVintageInfo(
+        uint256 vintageTokenizedId
+    ) public view override returns (uint256 vintageTokenId, uint256 amount, Status status) {
+        batchTokenized memory batchTokenizedData = projectVintageTokenized[vintageTokenizedId];
+        return (batchTokenizedData.projectVintageId, batchTokenizedData.amount, batchTokenizedData.status);
     }
 }

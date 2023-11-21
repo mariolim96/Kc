@@ -8,11 +8,11 @@ import type { CarbonProject, CarbonProject__factory } from '../typechain-types'
 import type { ProjectDataStruct, ProjectDataStructOutput } from '../typechain-types/contracts/CarbonProject'
 
 describe('CarbonProject', async () => {
-    let CarbonProject: CarbonProject
-    let CarbonProjectFactory: ContractFactory<any[], CarbonProject__factory>
     let addr1: HardhatEthersSigner
     let addr2: HardhatEthersSigner
     let addrs: HardhatEthersSigner[]
+    let CarbonProject: CarbonProject
+    let CarbonProjectFactory: ContractFactory<any[], CarbonProject__factory>
     beforeEach(async () => {
         ;[addr1, addr2, ...addrs] = await ethers.getSigners()
         CarbonProjectFactory = await ethers.getContractFactory<any[], CarbonProject__factory>('CarbonProject')
@@ -65,7 +65,6 @@ describe('CarbonProject', async () => {
         const args = events[0].args
         console.log('args:', args)
         expect(args[0]).to.equal(project.beneficiary)
-        // expect(args[1]).to.equal(project.projectId)
         const res = await CarbonProject.isValidProjectTokenId(args[1])
         expect(res).to.equal(true)
         const currProject = await CarbonProject.getProjectDataByTokenId(args[1])

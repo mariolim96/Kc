@@ -6,7 +6,7 @@ abstract contract CarbonOffsetFactoryStorage {
     address public contractRegistry;
     address[] public deployedContracts;
 
-    mapping(uint256 => address) public pvIdtoERC20;
+    mapping(uint256 => address) public _pvIdtoERC20;
     address public beacon;
 
     address public bridgeFeeReceiver;

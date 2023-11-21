@@ -7,13 +7,14 @@ import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
 import '@openzeppelin/contracts/utils/Context.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
 
+import './types/CarbonProjectTypes.sol';
+import './libraries/Errors.sol';
+import './storages/CarbonOffsetStorage.sol';
+
 import './interfaces/ICarbonProjects.sol';
 import './interfaces/IProjectVintages.sol';
 import './interfaces/IPausable.sol';
-// import './interfaces/ICarbonOffsetFactory.sol';
-
-import './types/CarbonProjectTypes.sol';
-import './storages/CarbonOffsetStorage.sol';
+import './interfaces/ICarbonOffsetFactory.sol';
 import './interfaces/IRegistry.sol';
 import './interfaces/ICarbonTokenizer.sol';
 
@@ -43,14 +44,14 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
     /// @dev modifier checks whether the `ToucanCarbonOffsetsFactory` is paused
     /// Since TCO2 contracts are permissionless, pausing does not function individually
     modifier whenNotPaused() {
-        // address tco2Factory = IRegistry(contractRegistry).toucanCarbonOffsetsFactoryAddress(standardRegistry());
-        // bool _paused = IPausable(tco2Factory).paused();
+        // address co2Factory = IRegistry(contractRegistry).toucanCarbonOffsetsFactoryAddress(standardRegistry());
+        // bool _paused = IPausable(co2Factory).paused();
         // require(!_paused, 'Paused TCO2');
         _;
     }
     modifier onlyFactoryOwner() {
-        // address tco2Factory = ItRegistry(contractRegistry).CarbonOffsetsFactoryAddress(standardRegistry());
-        // address owner = IToucanCarbonOffsetsFactory(tco2Factory).owner();
+        // address co2Factory = ItRegistry(contractRegistry).CarbonOffsetsFactoryAddress(standardRegistry());
+        // address owner = IToucanCarbonOffsetsFactory(co2Factory).owner();
         // require(owner == msg.sender, 'Not factory owner');
         _;
     }
@@ -74,7 +75,7 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
         address contractRegistry_
     ) external virtual initializer {
         __ERC20_init_unchained(name_, symbol_);
-        // _projectVintageTokenId = projectVintageTokenId_;
+        _carbonTokenizerId = projectVintageTokenId_;
         contractRegistry = contractRegistry_;
     }
 
@@ -154,6 +155,33 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
         return msg.data;
     }
 
+    /// @dev Returns the remaining space in TCO2 contract before hitting the cap
+    function getRemaining() public view returns (uint256 remaining) {
+        uint256 cap = getDepositCap();
+        remaining = cap - totalSupply();
+    }
+
+    /// @dev Returns the cap for TCO2s based on `totalVintageQuantity`
+    /// Returns `~unlimited` if the value for the vintage is not set
+    function getDepositCap() public view returns (uint256) {
+        VintageData memory vintageData;
+        (, vintageData) = getAttributes();
+        uint64 totalVintageQuantity = vintageData.totalVintageQuantity;
+
+        ///@dev multipliying tonnes with decimals
+        uint256 cap = totalVintageQuantity * 10 ** decimals();
+
+        /// @dev if totalVintageQuantity is not set (=0), remove cap
+        if (cap == 0) return type(uint256).max;
+
+        return cap;
+    }
+
+    function _getDataFromCarbonTokeizer(address cob, uint256 tokenId) internal view returns (uint256, uint256, Status) {
+        (uint256 vintageTokenId, uint256 quantity, Status status) = ICarbonTokenizer(cob).getVintageInfo(tokenId);
+        return (vintageTokenId, quantity * 10 ** decimals(), status);
+    }
+
     /// @notice Receive hook to fractionalize Batch-NFTs into ERC20's
     /// @dev Function is called with `operator` as `msg.sender` in a reference implementation by OZ
     /// `from` is the previous owner, not necessarily the same as operator.
@@ -165,51 +193,52 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
         bytes calldata /* data */
     ) external virtual override whenNotPaused returns (bytes4) {
         // msg.sender is the CarbonOffsetBatches contract
-
-        // (
-        //     uint256 gotVintageTokenId,
-        //     uint256 quantity,
-        //     BatchStatus status
-        // ) = _getNormalizedDataFromBatch(msg.sender, tokenId);
         // require(
-        //     gotVintageTokenId == _projectVintageTokenId,
-        //     Errors.TCO2_NON_MATCHING_NFT
+        //     checkWhiteListed(msg.sender),
+        //     Errors.TCO2_BATCH_NOT_WHITELISTED
         // );
-        // require(
-        //     status == BatchStatus.Confirmed,
-        //     Errors.TCO2_BATCH_NOT_CONFIRMED
-        // );
-        // require(getRemaining() >= quantity, Errors.TCO2_QTY_HIGHER);
+        (uint256 gotVintageTokenId, uint256 quantity, Status status) = _getDataFromCarbonTokeizer(msg.sender, tokenId);
+        require(gotVintageTokenId == _carbonTokenizerId, Errors.TCO2_NON_MATCHING_NFT);
+        require(status == Status.fractionalized, Errors.TCO2_BATCH_NOT_CONFIRMED);
+        require(getRemaining() >= quantity, Errors.TCO2_QTY_HIGHER);
+        minterToId[from] = tokenId;
+        ICarbonOffsetsFactory co2Factory = ICarbonOffsetsFactory(
+            IRegistry(contractRegistry).carbonOffsetTokenFactoryAddress()
+        );
 
-        // minterToId[from] = tokenId;
-        // IToucanCarbonOffsetsFactory tco2Factory = IToucanCarbonOffsetsFactory(
-        //     IToucanContractRegistry(contractRegistry)
-        //         .toucanCarbonOffsetsFactoryAddress(standardRegistry())
-        // );
-        // address bridgeFeeReceiver = tco2Factory.bridgeFeeReceiverAddress();
+        address bridgeFeeReceiver = co2Factory.bridgeFeeReceiverAddress();
 
-        // if (bridgeFeeReceiver == address(0x0)) {
-        //     // @dev if no bridge fee receiver address is set, mint without fees
-        //     _mint(from, quantity);
-        // } else {
-        //     // @dev calculate bridge fees
-        //     (uint256 feeAmount, uint256 feeBurnAmount) = tco2Factory
-        //         .getBridgeFeeAndBurnAmount(quantity);
-        //     _mint(from, quantity - feeAmount);
-        //     address bridgeFeeBurnAddress = tco2Factory.bridgeFeeBurnAddress();
-        //     if (bridgeFeeBurnAddress != address(0x0) && feeBurnAmount > 0) {
-        //         feeAmount -= feeBurnAmount;
-        //         _mint(bridgeFeeReceiver, feeAmount);
-        //         _mint(bridgeFeeBurnAddress, feeBurnAmount);
-        //         emit FeePaid(from, feeAmount);
-        //         emit FeeBurnt(from, feeBurnAmount);
-        //     } else if (feeAmount > 0) {
-        //         _mint(bridgeFeeReceiver, feeAmount);
-        //         emit FeePaid(from, feeAmount);
-        //     }
-        // }
+        if (bridgeFeeReceiver == address(0x0)) {
+            // @dev if no bridge fee receiver address is set, mint without fees
+            _mint(from, quantity);
+        } else {
+            // @dev calculate bridge fees
+            (uint256 feeAmount, uint256 feeBurnAmount) = co2Factory.getBridgeFeeAndBurnAmount(quantity);
+            _mint(from, quantity - feeAmount);
+            address bridgeFeeBurnAddress = co2Factory.getBridgeFeeBurnAddress();
+            if (bridgeFeeBurnAddress != address(0x0) && feeBurnAmount > 0) {
+                feeAmount -= feeBurnAmount;
+                _mint(bridgeFeeReceiver, feeAmount);
+                _mint(bridgeFeeBurnAddress, feeBurnAmount);
+                emit FeePaid(from, feeAmount);
+                emit FeeBurnt(from, feeBurnAmount);
+            } else if (feeAmount > 0) {
+                _mint(bridgeFeeReceiver, feeAmount);
+                emit FeePaid(from, feeAmount);
+            }
+        }
 
         return this.onERC721Received.selector;
+    }
+
+    /// @notice Burn TCO2 on behalf of a user. msg.sender needs to be approved by
+    /// the account for the burn to be successfull. This function is exposed so it
+    /// can be utilized to burn credits without retiring them (eg. dispose HFC-23).
+    /// @param account The user for whom to burn TCO2
+    /// @param amount The amount to burn
+    function burnFrom(address account, uint256 amount) external virtual whenNotPaused {
+        _spendAllowance(account, msg.sender, amount);
+        _burn(account, amount);
     }
 }
 
@@ -225,58 +254,6 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
 //     // ----------------------------------------
 //     //      Bridge-related functions
 //     // ----------------------------------------
-
-//     /// @notice Burn TCO2 on behalf of a user. msg.sender does not require approval
-//     /// by the account for the burn to be successfull. This function is exposed so it
-//     /// can be utilized in cross-chain transfers of TCO2 where we want to burn the
-//     /// TCO2 in the source chain but not retire it.
-//     /// @param account The user for whom to burn TCO2
-//     /// @param amount The amount to burn.
-//     function bridgeBurn(address account, uint256 amount) external virtual whenNotPaused onlyBridges {
-//         _burn(account, amount);
-//     }
-
-//     /// @notice Mint TCO2 on behalf of a user. This function is exposed to
-//     /// be called by authorized message bridge systems and utilized for
-//     /// cross-chain transfers of TCO2 where we want to mint the TCO2 in the
-//     /// source chain.
-//     /// @param account The user for whom to mint TCO2
-//     /// @param amount The amount to mint.
-//     function bridgeMint(address account, uint256 amount) external virtual whenNotPaused onlyBridges {
-//         _mint(account, amount);
-//     }
-
-//     /// @dev Returns the remaining space in TCO2 contract before hitting the cap
-//     function getRemaining() public view returns (uint256 remaining) {
-//         uint256 cap = getDepositCap();
-//         remaining = cap - totalSupply();
-//     }
-
-//     /// @dev Returns the cap for TCO2s based on `totalVintageQuantity`
-//     /// Returns `~unlimited` if the value for the vintage is not set
-//     function getDepositCap() public view returns (uint256) {
-//         VintageData memory vintageData;
-//         (, vintageData) = getAttributes();
-//         uint64 totalVintageQuantity = vintageData.totalVintageQuantity;
-
-//         ///@dev multipliying tonnes with decimals
-//         uint256 cap = totalVintageQuantity * 10 ** decimals();
-
-//         /// @dev if totalVintageQuantity is not set (=0), remove cap
-//         if (cap == 0) return type(uint256).max;
-
-//         return cap;
-//     }
-
-//     /// @notice Burn TCO2 on behalf of a user. msg.sender needs to be approved by
-//     /// the account for the burn to be successfull. This function is exposed so it
-//     /// can be utilized to burn credits without retiring them (eg. dispose HFC-23).
-//     /// @param account The user for whom to burn TCO2
-//     /// @param amount The amount to burn
-//     function burnFrom(address account, uint256 amount) external virtual whenNotPaused {
-//         _spendAllowance(account, msg.sender, amount);
-//         _burn(account, amount);
-//     }
 
 //     // @dev Internal function for the burning of TCO2 tokens
 //     // @dev retiringEntityAddress is a parameter to handle scenarios, when
@@ -356,88 +333,9 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
 //         IERC721(batchNFT).transferFrom(address(this), msg.sender, tokenId);
 //     }
 
-//     /// @notice Receive hook to fractionalize Batch-NFTs into ERC20's
-//     /// @dev Function is called with `operator` as `msg.sender` in a reference implementation by OZ
-//     /// `from` is the previous owner, not necessarily the same as operator.
-//     /// The hook checks if NFT collection is whitelisted and next if attributes are matching this ERC20 contract
-//     function onERC721Received(
-//         address, /* operator */
-//         address from,
-//         uint256 tokenId,
-//         bytes calldata /* data */
-//     ) external virtual override whenNotPaused returns (bytes4) {
-//         // msg.sender is the CarbonOffsetBatches contract
-//         require(
-//             checkWhiteListed(msg.sender),
-//             Errors.TCO2_BATCH_NOT_WHITELISTED
-//         );
-
-//         (
-//             uint256 gotVintageTokenId,
-//             uint256 quantity,
-//             BatchStatus status
-//         ) = _getNormalizedDataFromBatch(msg.sender, tokenId);
-//         require(
-//             gotVintageTokenId == _projectVintageTokenId,
-//             Errors.TCO2_NON_MATCHING_NFT
-//         );
-//         require(
-//             status == BatchStatus.Confirmed,
-//             Errors.TCO2_BATCH_NOT_CONFIRMED
-//         );
-//         require(getRemaining() >= quantity, Errors.TCO2_QTY_HIGHER);
-
-//         minterToId[from] = tokenId;
-//         IToucanCarbonOffsetsFactory tco2Factory = IToucanCarbonOffsetsFactory(
-//             IToucanContractRegistry(contractRegistry)
-//                 .toucanCarbonOffsetsFactoryAddress(standardRegistry())
-//         );
-//         address bridgeFeeReceiver = tco2Factory.bridgeFeeReceiverAddress();
-
-//         if (bridgeFeeReceiver == address(0x0)) {
-//             // @dev if no bridge fee receiver address is set, mint without fees
-//             _mint(from, quantity);
-//         } else {
-//             // @dev calculate bridge fees
-//             (uint256 feeAmount, uint256 feeBurnAmount) = tco2Factory
-//                 .getBridgeFeeAndBurnAmount(quantity);
-//             _mint(from, quantity - feeAmount);
-//             address bridgeFeeBurnAddress = tco2Factory.bridgeFeeBurnAddress();
-//             if (bridgeFeeBurnAddress != address(0x0) && feeBurnAmount > 0) {
-//                 feeAmount -= feeBurnAmount;
-//                 _mint(bridgeFeeReceiver, feeAmount);
-//                 _mint(bridgeFeeBurnAddress, feeBurnAmount);
-//                 emit FeePaid(from, feeAmount);
-//                 emit FeeBurnt(from, feeBurnAmount);
-//             } else if (feeAmount > 0) {
-//                 _mint(bridgeFeeReceiver, feeAmount);
-//                 emit FeePaid(from, feeAmount);
-//             }
-//         }
-
-//         return this.onERC721Received.selector;
-//     }
-
 //     // ----------------------------------------
 //     //       Internal functions
 //     // ----------------------------------------
-
-//     function _getNormalizedDataFromBatch(address cob, uint256 tokenId)
-//         internal
-//         view
-//         returns (
-//             uint256,
-//             uint256,
-//             BatchStatus
-//         )
-//     {
-//         (
-//             uint256 vintageTokenId,
-//             uint256 quantity,
-//             BatchStatus status
-//         ) = ICarbonOffsetBatches(cob).getBatchNFTData(tokenId);
-//         return (vintageTokenId, quantity * 10**decimals(), status);
-//     }
 
 //     /// @dev Internal helper to check if CarbonOffsetBatches is whitelisted (official)
 //     function checkWhiteListed(address collection)

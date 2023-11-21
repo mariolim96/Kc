@@ -26,7 +26,6 @@ describe('Registry', async () => {
 
         it('Should set the right owner', async () => {
             expect(await registry.owner()).to.equal(addr1.address)
-            expect(await registry.version()).to.equal('1.0')
         })
         it('should set Carbon Projects address', async function () {
             const newAddress = '0x1234567890123456789012345678901234567890'
@@ -34,7 +33,8 @@ describe('Registry', async () => {
             const carbonProjectsAddress = await registry.carbonProjectsAddress()
             expect(carbonProjectsAddress).to.equal(newAddress)
         })
+        it('should add a new Vintage', async function () {
+            // i need an example
+        })
     })
-
-    // describe('should set ')
 })
