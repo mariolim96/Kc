@@ -27,7 +27,13 @@
         "@next/next/no-html-link-for-pages": "off",
         "react/jsx-key": "off",
         "tailwindcss/no-custom-classname": "off",
-        "import/order": "off"
+        "import/order": "off",
+        "react": {
+            "function-component-definition": {
+                "namedComponents": "arrow-function",
+                "unnamedComponents": "arrow-function"
+            }
+        }
     },
     "settings": {
         // is not working somehow

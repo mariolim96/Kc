@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes'
 import { Button } from './button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './dropdown-menu'
 
-export function ModeToggle() {
+const ThemeToggler = () => {
     const { setTheme } = useTheme()
 
     return (
@@ -28,4 +28,4 @@ export function ModeToggle() {
     )
 }
 
-export default ModeToggle
+export default ThemeToggler

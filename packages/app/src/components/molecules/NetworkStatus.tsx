@@ -3,9 +3,9 @@
 import React from 'react'
 import { useBlockNumber, useNetwork } from 'wagmi'
 
-import { GetNetworkColor } from '../utils/network'
+import { GetNetworkColor } from '../../utils/network'
+import { Badge } from '../ui/badge'
 import { LinkComponent } from './LinkComponent'
-import { Badge } from './ui/badge'
 
 export function NetworkStatus() {
     const block = useBlockNumber({ watch: true })

@@ -1,9 +1,9 @@
 import React from 'react'
 import { FaGithub, FaTwitter } from 'react-icons/fa6'
 
-import { SITE_DESCRIPTION, SOCIAL_GITHUB, SOCIAL_TWITTER } from '../utils/site'
-import { LinkComponent } from './LinkComponent'
-import { NetworkStatus } from './NetworkStatus'
+import { SITE_DESCRIPTION, SOCIAL_GITHUB, SOCIAL_TWITTER } from '../../utils/site'
+import { LinkComponent } from '../molecules/LinkComponent'
+import { NetworkStatus } from '../molecules/NetworkStatus'
 
 export function Footer() {
     return (

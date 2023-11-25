@@ -1,7 +1,7 @@
 import React, { PropsWithChildren } from 'react'
 import type { Metadata } from 'next'
 
-import { Layout } from '../components/Layout'
+import { Layout } from '../components/templates/Layout'
 import Providers from '../context/Providers'
 import { SITE_DESCRIPTION, SITE_NAME } from '../utils/site'
 
