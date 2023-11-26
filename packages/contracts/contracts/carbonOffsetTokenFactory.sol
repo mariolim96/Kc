@@ -53,7 +53,7 @@ contract CarbonOffsetFactory is
         _disableInitializers();
     }
 
-    function inizialize(address[] calldata accounts, bytes32[] calldata roles) internal {
+    function inizialize(address[] calldata accounts, bytes32[] calldata roles) external virtual initializer {
         require(accounts.length == roles.length, 'Array length mismatch');
 
         __Context_init_unchained();
@@ -61,13 +61,14 @@ contract CarbonOffsetFactory is
         __Pausable_init_unchained();
         __UUPSUpgradeable_init_unchained();
         __AccessControl_init_unchained();
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        bool hasDefaultAdmin = false;
+        // bool hasDefaultAdmin = false;
         for (uint256 i = 0; i < accounts.length; ++i) {
             _grantRole(roles[i], accounts[i]);
-            if (roles[i] == DEFAULT_ADMIN_ROLE) hasDefaultAdmin = true;
+            // if (roles[i] == DEFAULT_ADMIN_ROLE) hasDefaultAdmin = true;
         }
-        require(hasDefaultAdmin, 'No admin specified');
+        // require(hasDefaultAdmin, 'No admin specified');
     }
 
     /// @dev sets the Beacon that tracks the current implementation logic of the TCO2s
