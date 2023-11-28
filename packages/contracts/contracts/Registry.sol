@@ -154,9 +154,12 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
     function addERC20(address erc20) external virtual {
         projectVintageERC20Registry[erc20] = true;
     }
+
+    function isValidERC20(address erc20) external view virtual override returns (bool) {
+        return projectVintageERC20Registry[erc20];
+    }
 }
 
-// import './interfaces/IPausable.sol';
 // import './interfaces/IToucanCarbonOffsetsFactory.sol';
 // import './libraries/Strings.sol';
 
@@ -182,11 +185,6 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //     // ----------------------------------------
 
 //     event TCO2FactoryAdded(address indexed factory, string indexed standard);
-
-//     /// @custom:oz-upgrades-unsafe-allow constructor
-//     constructor() {
-//         _disableInitializers();
-//     }
 
 //     // ----------------------------------------
 //     //              Setters
@@ -217,42 +215,9 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //     /// TODO: Kept for backwards-compatibility; will be removed in a future
 //     /// upgrade in favor of addERC20(erc20, 'verra')
 
-//     /// @notice Keep track of TCO2s per standard
-//     function addERC20(address erc20, string calldata standardRegistry)
-//         external
-//         virtual
-//         onlyBy(toucanCarbonOffsetFactories[standardRegistry], owner())
-//     {
-//         projectVintageERC20Registry[erc20] = true;
-//     }
-
 //     // ----------------------------------------
 //     //              Getters
 //     // ----------------------------------------
-
-//     /// Returns the TCO2 factory for Verra
-//     /// TODO: Kept for backwards-compatibility; will be removed in a future
-//     /// upgrade in favor of toucanCarbonOffsetsFactory('verra')
-//     function toucanCarbonOffsetsFactoryAddress()
-//         external
-//         view
-//         virtual
-//         override
-//         returns (address)
-//     {
-//         return DEPRECATED_toucanCarbonOffsetsFactoryAddress;
-//     }
-
-//     /// @dev return the TCO2 factory address for the provided standard
-//     function toucanCarbonOffsetsFactoryAddress(string memory standardRegistry)
-//         external
-//         view
-//         virtual
-//         override
-//         returns (address)
-//     {
-//         return toucanCarbonOffsetFactories[standardRegistry];
-//     }
 
 //     function toucanCarbonOffsetsEscrowAddress()
 //         external
@@ -277,15 +242,5 @@ contract Registry is IRegistry, RegistryStorage, OwnableUpgradeable, AccessContr
 //     /// TODO: Kept for backwards-compatibility; will be removed in a future
 //     /// upgrade in favor of isValidERC20(erc20)
 //     function checkERC20(address erc20) external view virtual returns (bool) {
-//         return projectVintageERC20Registry[erc20];
-//     }
-
-//     function isValidERC20(address erc20)
-//         external
-//         view
-//         virtual
-//         override
-//         returns (bool)
-//     {
 //         return projectVintageERC20Registry[erc20];
 //     }

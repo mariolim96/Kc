@@ -18,12 +18,7 @@ interface IRegistry {
 
     function retirementCertificatesAddress() external view returns (address);
 
-    // function toucanCarbonOffsetsFactoryAddress(string memory standardRegistry)
-    //     external
-    //     view
-    //     returns (address);
-
-    // function isValidERC20(address erc20) external view returns (bool);
+    function isValidERC20(address erc20) external view returns (bool);
 
     function addERC20(address erc20) external;
 }
