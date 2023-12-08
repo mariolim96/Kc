@@ -10,9 +10,11 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import './interfaces/IRegistry.sol';
-import {IProjectVintages} from './interfaces/IProjectVintages.sol';
 import './interfaces/ICarbonTokenizer.sol';
+import './interfaces/IProjectVintages.sol';
 import './types/CarbonTokenizer.types.sol';
+import {ICarbonOffsetsFactory} from './interfaces/ICarbonOffsetFactor.sol';
+import 'hardhat/console.sol';
 
 contract CarbonTokenizerContract is
     Initializable,
@@ -37,9 +39,9 @@ contract CarbonTokenizerContract is
     uint256 internal _projectVintageTokenizedCounter;
 
     // tokenizedId => vintageTokenId
-    mapping(uint256 => batchTokenized) public projectVintageTokenized;
+    mapping(uint256 => batchTokenized) public projectVintageBatches;
     // vintageTokenId => tokenizedId
-    mapping(uint256 => uint256) public vintageTokenIdToTokenizedId;
+    mapping(uint256 => uint256) public vintageIdToTokenizedId;
     // ----------------------------------------
     //       Events
     // ----------------------------------------
@@ -74,8 +76,7 @@ contract CarbonTokenizerContract is
         _unpause();
     }
 
-    function safeMint(address to) public onlyRole(MINTER_ROLE) {
-        uint256 tokenId = _projectVintageTokenizedCounter++;
+    function safeMint(address to, uint256 tokenId) public onlyRole(MINTER_ROLE) {
         _safeMint(to, tokenId);
     }
 
@@ -99,33 +100,72 @@ contract CarbonTokenizerContract is
     // ----------------------------------------
     //       Public functions
     // ----------------------------------------
+    // function mintBatchTokenized(uint256 vintageTokenId) public {
+    //     IRegistry registry = IRegistry(registryAddress);
+    //     // create a new batch of vintage  with status active a
 
+    // }
     function fractionalize(uint256 vintageTokenId) public override {
         IRegistry registry = IRegistry(registryAddress);
         IProjectVintages projectVintages = IProjectVintages(registry.carbonProjectVintagesAddress());
         require(projectVintages.exists(vintageTokenId), 'vintageTokenId does not exist');
         VintageData memory vintageData = projectVintages.getProjectVintageDataByTokenId(vintageTokenId);
-        batchTokenized memory batchTokenizedData = projectVintageTokenized[vintageTokenId];
-        //verify if the batch of vitages Exists
-        if (vintageTokenIdToTokenizedId[vintageTokenId] == 0) {
+        batchTokenized memory batchTokenizedData = projectVintageBatches[vintageTokenId];
+        address tokenAddress = registry.carbonOffsetTokenFactoryAddress();
+        ICarbonOffsetsFactory factoryy = ICarbonOffsetsFactory(registry.carbonOffsetTokenFactoryAddress());
+        // verify if the batch of vitages Exists
+        if (vintageIdToTokenizedId[vintageTokenId] == 0) {
             //create the batch of vintages
-            uint256 tokenId = _projectVintageTokenizedCounter++;
+            uint256 tokenId = ++_projectVintageTokenizedCounter;
             _safeMint(msg.sender, tokenId);
-            projectVintageTokenized[vintageTokenId] = batchTokenized(
+            projectVintageBatches[vintageTokenId] = batchTokenized(
                 tokenId,
                 Status.fractionalized,
                 vintageData.totalVintageQuantity
             );
-            vintageTokenIdToTokenizedId[vintageTokenId] = tokenId;
+            vintageIdToTokenizedId[vintageTokenId] = tokenId;
+            console.log('vintageTokenId:', vintageTokenId);
             // we need to finish the minting of the ERC20 with the factory
+            console.log('tokenAddress:', tokenAddress);
+            factoryy.deployFromVintage(vintageTokenId);
+            // TRANSFER THE TOKENS TO THE OWNER
+            address tco2 = factoryy.pvIdtoERC20(vintageTokenId);
+            safeTransferFrom(_msgSender(), tco2, tokenId, '');
+
             emit ProjectVintageTokenizedEvent(tokenId, vintageTokenId, vintageData.totalVintageQuantity);
+            console.log('ProjectVintageTokenizedEvent', tokenId, vintageTokenId, vintageData.totalVintageQuantity);
         } else {
             require(
-                batchTokenizedData.status == Status.fractionalized,
+                batchTokenizedData.status == Status.active,
                 'The batch of vintages is not in the fractionalized status'
             );
-            // same here
+            uint256 tokenId = ++_projectVintageTokenizedCounter;
+
+            // set status to fractionalized
+            projectVintageBatches[vintageTokenId].status = Status.fractionalized;
+            factoryy.deployFromVintage(vintageTokenId);
+            address tco2 = factoryy.pvIdtoERC20(vintageTokenId);
+            safeTransferFrom(_msgSender(), tco2, tokenId, '');
         }
+    }
+
+    function getVintageBatchByTokenId(uint256 tokenId) public view override returns (batchTokenized memory) {
+        return projectVintageBatches[tokenId];
+    }
+
+    function getTokenIdByVintageTokenId(uint256 vintageTokenId) public view returns (uint256) {
+        return vintageIdToTokenizedId[vintageTokenId];
+    }
+
+    function getVintageTokenIdByTokenId(uint256 tokenId) external view virtual override returns (uint256) {
+        return projectVintageBatches[tokenId].projectVintageId;
+    }
+
+    function getVintageInfo(
+        uint256 vintageTokenizedId
+    ) public view override returns (uint256 vintageTokenId, uint256 amount, Status status) {
+        batchTokenized memory batchTokenizedData = projectVintageBatches[vintageTokenizedId];
+        return (batchTokenizedData.projectVintageId, batchTokenizedData.amount, batchTokenizedData.status);
     }
 
     function setCarbonRegistryAddress(address _registryAddress) public onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -134,20 +174,5 @@ contract CarbonTokenizerContract is
 
     function getCarbonRegistryAddress() public view returns (address) {
         return registryAddress;
-    }
-
-    function getVintageTokenIdByTokenId(uint256 tokenId) public view override returns (batchTokenized memory) {
-        return projectVintageTokenized[tokenId];
-    }
-
-    function getTokenIdByVintageTokenId(uint256 vintageTokenId) public view returns (uint256) {
-        return vintageTokenIdToTokenizedId[vintageTokenId];
-    }
-
-    function getVintageInfo(
-        uint256 vintageTokenizedId
-    ) public view override returns (uint256 vintageTokenId, uint256 amount, Status status) {
-        batchTokenized memory batchTokenizedData = projectVintageTokenized[vintageTokenizedId];
-        return (batchTokenizedData.projectVintageId, batchTokenizedData.amount, batchTokenizedData.status);
     }
 }

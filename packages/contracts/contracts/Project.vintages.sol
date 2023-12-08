@@ -130,8 +130,8 @@ contract ProjectVintages is
         _mint(to, newItemId);
 
         vintageData[newItemId] = _vintageData;
-        emit ProjectVintageMinted(to, newItemId, _vintageData.projectTokenId, _vintageData.startTime);
         pvToTokenId[_vintageData.projectTokenId][_vintageData.startTime] = newItemId;
+        emit ProjectVintageMinted(to, newItemId, _vintageData.projectTokenId, _vintageData.startTime);
 
         return newItemId;
     }

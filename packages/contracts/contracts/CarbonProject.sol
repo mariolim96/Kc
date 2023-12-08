@@ -14,6 +14,7 @@ import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol';
 import {IAccessControlUpgradeable} from './interfaces/IAccessControlUpgradable.sol';
+import 'hardhat/console.sol';
 
 contract CarbonProject is
     ICarbonProjects,
@@ -114,6 +115,7 @@ contract CarbonProject is
         projectData[newItemId].beneficiary = beneficiary;
 
         emit ProjectMinted(to, newItemId);
+        console.log('ProjectMinted:', to, newItemId);
         pidToTokenId[projectId] = newItemId;
         return newItemId;
     }
@@ -144,6 +146,7 @@ contract CarbonProject is
         projectData[tokenId].beneficiary = beneficiary;
 
         emit ProjectUpdated(tokenId);
+        console.log('ProjectUpdated:', tokenId);
     }
 
     function isValidProjectTokenId(uint256 projectTokenId) external view virtual override returns (bool) {

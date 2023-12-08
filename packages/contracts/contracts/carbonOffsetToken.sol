@@ -14,9 +14,11 @@ import './storages/CarbonOffsetStorage.sol';
 import './interfaces/ICarbonProjects.sol';
 import './interfaces/IProjectVintages.sol';
 import './interfaces/IPausable.sol';
-import './interfaces/ICarbonOffsetFactory.sol';
+import './interfaces/ICarbonOffsetFactor.sol';
 import './interfaces/IRegistry.sol';
 import './interfaces/ICarbonTokenizer.sol';
+import './interfaces/IRetirements.sol';
+import 'hardhat/console.sol';
 
 // import '../CarbonOffsetBatchesTypes.sol';
 // import '../interfaces/IRetirementCertificates.sol';
@@ -87,9 +89,7 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
         address pc = IRegistry(contractRegistry).carbonProjectsAddress();
         address vc = IRegistry(contractRegistry).carbonProjectVintagesAddress();
         address ct = IRegistry(contractRegistry).carbonTokenizerAddress();
-        uint256 _projectVintageTokenId = ICarbonTokenizer(ct)
-            .getVintageTokenIdByTokenId(_carbonTokenizerId)
-            .projectVintageId;
+        uint256 _projectVintageTokenId = ICarbonTokenizer(ct).getVintageTokenIdByTokenId(_carbonTokenizerId);
         VintageData memory vintageData = IProjectVintages(vc).getProjectVintageDataByTokenId(_projectVintageTokenId);
         ProjectData memory projectData = ICarbonProjects(pc).getProjectDataByTokenId(vintageData.projectTokenId);
 
@@ -221,10 +221,13 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
                 _mint(bridgeFeeReceiver, feeAmount);
                 _mint(bridgeFeeBurnAddress, feeBurnAmount);
                 emit FeePaid(from, feeAmount);
+                console.log('feeBurnAmount:', feeBurnAmount, from);
                 emit FeeBurnt(from, feeBurnAmount);
+                console.log('from, feeBurnAmount:', from, feeBurnAmount);
             } else if (feeAmount > 0) {
                 _mint(bridgeFeeReceiver, feeAmount);
                 emit FeePaid(from, feeAmount);
+                console.log('from, feeAmount:', from, feeAmount);
             }
         }
 
@@ -241,91 +244,48 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
         _burn(account, amount);
     }
 
-    // // @dev Internal function for the burning of TCO2 tokens
-    // // @dev retiringEntityAddress is a parameter to handle scenarios, when
-    // // retirements are performed from the escrow contract and the retiring entity
-    // // is different than the account.
-    // function _retire(
-    //     address account,
-    //     uint256 amount,
-    //     address retiringEntityAddress
-    // ) internal virtual returns (uint256 retirementEventId) {
-    //     _burn(account, amount);
-
-    //     // Register retirement event in the certificates contract
-    //     address certAddr = IToucanContractRegistry(contractRegistry)
-    //         .retirementCertificatesAddress();
-    //     retirementEventId = IRetirementCertificates(certAddr).registerEvent(
-    //         retiringEntityAddress,
-    //         _projectVintageTokenId,
-    //         amount,
-    //         false
-    //     );
-
-    //     emit Retired(retiringEntityAddress, amount, retirementEventId);
+    // function spendAllowance(address to, uint256 amount) external virtual whenNotPaused {
+    //     _spendAllowance(to, msg.sender, amount);
     // }
 
-    // @dev Internal function retire and mint certificates
-    function _retireAndMintCertificate(
-        address retiringEntity,
-        CreateRetirementRequestParams memory params
-    ) internal virtual whenNotPaused {
-        // Retire provided amount
-        uint256 retirementEventId = _retire(msg.sender, params.amount, retiringEntity);
-        uint256[] memory retirementEventIds = new uint256[](1);
-        retirementEventIds[0] = retirementEventId;
-
-        //slither-disable-next-line unused-return
-        IRetirementCertificates(IToucanContractRegistry(contractRegistry).retirementCertificatesAddress())
-            .mintCertificateWithExtraData(retiringEntity, params, retirementEventIds);
-    }
-
-    /// @notice Retirement/Cancellation of TCO2 tokens (the actual offsetting),
-    /// which results in the tokens being burnt
-    function retire(uint256 amount) external virtual whenNotPaused returns (uint256 retirementEventId) {
-        retirementEventId = _retire(msg.sender, amount, msg.sender);
-    }
-
-    /// @dev Allow for pools or third party contracts to retire for the user
-    /// Requires approval
-    function retireFrom(
+    // this function allow to retire tokens and mint certificates in one transaction without the need of events
+    function retire(
         address account,
-        uint256 amount
-    ) external virtual whenNotPaused returns (uint256 retirementEventId) {
-        _spendAllowance(account, msg.sender, amount);
-        retirementEventId = _retire(account, amount, account);
-    }
-
-    /// @notice Retire an amount of TCO2s, register an retirement event
-    /// then mint a certificate passing a single retirementEventId.
-    /// @param retiringEntityString An identifiable string for the retiring entity, eg. their name.
-    /// @param beneficiary The beneficiary to set in the NFT.
-    /// @param beneficiaryString The beneficiaryString to set in the NFT.
-    /// @param retirementMessage The retirementMessage to set in the NFT.
-    /// @param amount The amount to retire and issue an NFT certificate for.
-    function retireAndMintCertificate(
+        uint256 amount,
         string calldata retiringEntityString,
         address beneficiary,
         string calldata beneficiaryString,
-        string calldata retirementMessage,
-        uint256 amount
-    ) external virtual whenNotPaused {
-        CreateRetirementRequestParams memory params = CreateRetirementRequestParams({
-            tokenIds: new uint256[](0),
+        string calldata retirementMessage
+    ) external whenNotPaused {
+        _burn(account, amount);
+        RetirementRequestParams memory params = RetirementRequestParams({
+            tokenId: _carbonTokenizerId,
             amount: amount,
             retiringEntityString: retiringEntityString,
             beneficiary: beneficiary,
             beneficiaryString: beneficiaryString,
-            retirementMessage: retirementMessage,
-            beneficiaryLocation: '',
-            consumptionCountryCode: '',
-            consumptionPeriodStart: 0,
-            consumptionPeriodEnd: 0
+            retirementMessage: retirementMessage
         });
-
-        _retireAndMintCertificate(msg.sender, params);
+        IRetirementCertificates(IRegistry(contractRegistry).retirementCertificatesAddress()).mintCertificate(
+            account,
+            params
+        );
     }
 }
+
+// function _retireAndMintCertificate(
+//     address retiringEntity,
+//     CreateRetirementRequestParams memory params
+// ) internal virtual whenNotPaused {
+//     // Retire provided amount
+//     uint256 retirementEventId = _retire(msg.sender, params.amount, retiringEntity);
+//     uint256[] memory retirementEventIds = new uint256[](1);
+//     retirementEventIds[0] = retirementEventId;
+
+//     //slither-disable-next-line unused-return
+//     IRetirementCertificates(IToucanContractRegistry(contractRegistry).retirementCertificatesAddress())
+//         .mintCertificateWithExtraData(retiringEntity, params, retirementEventIds);
+// }
 
 // /// @notice Base contract that can be reused between different TCO2
 // /// implementations that need to work with batch NFTs

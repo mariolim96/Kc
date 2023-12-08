@@ -19,7 +19,8 @@ import './storages/CarbonOffsetFactoryStorage.sol';
 import './interfaces/ICarbonTokenizer.sol';
 import './interfaces/IPausable.sol';
 
-import './interfaces/ICarbonOffsetFactory.sol';
+import './interfaces/ICarbonOffsetFactor.sol';
+import 'hardhat/console.sol';
 
 contract CarbonOffsetFactory is
     OwnableUpgradeable,
@@ -79,7 +80,7 @@ contract CarbonOffsetFactory is
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
 
     function setRegistry(address _address) external virtual onlyOwner {
-        contractRegistry = _address;
+        registryAddress = _address;
     }
 
     function pvIdtoERC20(uint256 pvId) external view override returns (address) {
@@ -95,28 +96,35 @@ contract CarbonOffsetFactory is
     /// @param projectVintageTokenId links the vintage-specific data to the TCO2 contract
     function deployNewProxy(uint256 projectVintageTokenId) internal virtual whenNotPaused {
         require(beacon != address(0), 'Error: Beacon for proxy not set');
-        require(!checkExistence(projectVintageTokenId), 'pvERC20 already exists');
-        checkProjectVintageTokenExists(contractRegistry, projectVintageTokenId);
+        require(!checkExistence(projectVintageTokenId), 'pvERC20 already exists'); // verify that the project vintage has not been deployed yet
+        checkProjectVintageTokenExists(registryAddress, projectVintageTokenId); // verify that the project vintage exists
 
-        /// @dev generate payload for initialize function
+        // /// @dev generate payload for initialize function
         string memory signature = 'initialize(string,string,uint256,address)';
         bytes memory payload = abi.encodeWithSignature(
             signature,
             'Kyklos: KCO2',
             'KCO2',
             projectVintageTokenId,
-            contractRegistry
+            registryAddress
         );
 
-        //slither-disable-next-line reentrancy-no-eth
         BeaconProxy proxyTCO2 = new BeaconProxy(beacon, payload);
 
-        IRegistry(contractRegistry).addERC20(address(proxyTCO2));
+        IRegistry(registryAddress).addERC20(address(proxyTCO2));
+        console.log('address(proxyTCO2):', address(proxyTCO2));
 
         deployedContracts.push(address(proxyTCO2));
         _pvIdtoERC20[projectVintageTokenId] = address(proxyTCO2);
 
         emit TokenCreated(projectVintageTokenId, address(proxyTCO2));
+        console.log('tokenCreated', projectVintageTokenId, address(proxyTCO2));
+    }
+
+    /// @dev Deploys a TCO2 contract based on a project vintage
+    /// @param projectVintageTokenId numeric tokenId from vintage in `CarbonProjectVintages`
+    function deployFromVintage(uint256 projectVintageTokenId) external virtual whenNotPaused {
+        deployNewProxy(projectVintageTokenId);
     }
 
     /// @dev Checks if same project vintage has already been deployed
@@ -133,20 +141,14 @@ contract CarbonOffsetFactory is
         return deployedContracts;
     }
 
-    /// @dev Deploys a TCO2 contract based on a project vintage
-    /// @param projectVintageTokenId numeric tokenId from vintage in `CarbonProjectVintages`
-    function deployFromVintage(uint256 projectVintageTokenId) external virtual whenNotPaused {
-        deployNewProxy(projectVintageTokenId);
-    }
-
     /// @notice Emergency function to disable contract's core functionality
     /// @dev wraps _pause(), only Admin
-    function pause() external virtual onlyBy(contractRegistry, owner()) {
+    function pause() external virtual onlyBy(registryAddress, owner()) {
         _pause();
     }
 
     /// @dev unpause the system, wraps _unpause(), only Admin
-    function unpause() external virtual onlyBy(contractRegistry, owner()) {
+    function unpause() external virtual onlyBy(registryAddress, owner()) {
         _unpause();
     }
 

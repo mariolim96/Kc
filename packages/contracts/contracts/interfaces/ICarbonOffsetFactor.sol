@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.20;
 
-import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+// import '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
 interface ICarbonOffsetsFactory {
     function bridgeFeeReceiverAddress() external view returns (address receiver);
@@ -14,4 +14,6 @@ interface ICarbonOffsetsFactory {
     function owner() external view returns (address);
 
     function pvIdtoERC20(uint256 pvId) external view returns (address);
+
+    function deployFromVintage(uint256 projectVintageTokenId) external;
 }
