@@ -19,6 +19,10 @@ const config: HardhatUserConfig = {
             url: 'http://127.0.0.1:8545',
         },
     },
+    typechain: {
+        outDir: 'typechain-types',
+        target: 'ethers-v6',
+    },
 }
 
 // import { join } from "path";

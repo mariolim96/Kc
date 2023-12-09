@@ -5,11 +5,12 @@
     "scripts": {
         "build": "hardhat compile",
         "deploy": "npx hardhat run scripts/deploy.ts",
-        "deploy:nft": "npx hardhat run scripts/nft.ts",
+        "deploy:local": "npx hardhat run scripts/deploy.ts --network localhost",
         "coverage": "hardhat coverage",
         "test": "hardhat test ",
         "clean": "hardhat clean",
-        "typechain": "hardhat typechain"
+        "typechain": "hardhat typechain",
+        "node": "npx hardhat node"
     },
     "devDependencies": {
         "@ethersproject/abi": "^5.7.0",
@@ -31,13 +32,12 @@
         "chai": "^4.3.10",
         "dotenv": "^16.3.1",
         "ethers": "^6.8.1",
+        "hardhat": "^2.19.2",
         "hardhat-gas-reporter": "^1.0.9",
         "solidity-coverage": "^0.8.5",
-        "ts-node": "^10.9.1",
         "typechain": "^8.3.2",
-        "typescript": "^5.2.2"
+        "typescript": "^5.2.2",
+        "ts-node": "^10.9.2"
     },
-    "dependencies": {
-        "hardhat": "^2.19.0"
-    }
+    "dependencies": {}
 }
