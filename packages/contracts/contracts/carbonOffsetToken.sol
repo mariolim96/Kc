@@ -57,6 +57,11 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
         // require(owner == msg.sender, 'Not factory owner');
         _;
     }
+
+    function _contextSuffixLength() internal view virtual override(Context, ContextUpgradeable) returns (uint256) {
+        return super._contextSuffixLength();
+    }
+
     /// @dev Modifier to disallowing sending tokens to either the 0-address
     /// or this contract itself
     modifier validDestination(address to) {
@@ -289,7 +294,7 @@ contract CarbonOffsetToken is ERC20Upgradeable, CarbonOffsetsStorage, IERC721Rec
 
 // /// @notice Base contract that can be reused between different TCO2
 // /// implementations that need to work with batch NFTs
-// abstract contract ToucanCarbonOffsetsWithBatchBase is
+// abstract contract ToucanCa is
 //     IERC721Receiver,
 //     ToucanCarbonOffsetsBase
 // {

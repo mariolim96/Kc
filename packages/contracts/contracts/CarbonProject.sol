@@ -169,8 +169,6 @@ contract CarbonProject is
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
 }
 
-// import '@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol';
-
 // /// @notice The CarbonProjects contract stores carbon project-specific data
 // /// The data is stored in structs via ERC721 tokens
 // /// Most contracts in the protocol query the data stored here

@@ -44,7 +44,6 @@ describe('flow', async () => {
         let retirementCertificatesFactory: ContractFactory<any[], RetirementCertificates__factory>
         let carbonTokenizer: CarbonTokenizerContract
         let CarbonTokenizerFactory: ContractFactory<any[], CarbonTokenizerContract__factory>
-
         let receipt: ContractTransactionReceipt | null = null
 
         let addr1: HardhatEthersSigner
