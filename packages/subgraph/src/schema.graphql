@@ -1,0 +1,141 @@
+type User @entity {
+    id: ID!
+    # batchesOwned: [BatchToken!]!
+    # batchesCreated: [BatchToken!]!
+    projectsOwned: [Project!]!
+    projectsCreated: [Project!]!
+    vintagesOwned: [ProjectVintage!]!
+    vintagesCreated: [ProjectVintage!]!
+    # retirementsCreated: [Retirement!]!
+    # redeemsCreated: [Redeem!]!
+    # tokensOwned: [TCO2Balance!]!
+    # bridgeRequestOwned: [BridgeTokenRequest!]!
+}
+
+type Project @entity {
+    id: ID!
+    creator: User!
+    owner: User!
+    timestamp: BigInt!
+    tx: String!
+    projectId: String!
+    vintages: [ProjectVintage!]!
+    standard: String!
+    methodology: String!
+    region: String!
+    storageMethod: String!
+    method: String!
+    emissionType: String!
+    category: String!
+    uri: String!
+}
+
+type ProjectVintage @entity {
+    id: ID!
+    creator: User!
+    owner: User!
+    timestamp: BigInt!
+    tx: String!
+    name: String!
+    startTime: BigInt!
+    endTime: BigInt!
+    project: Project!
+    # batches: [BatchToken!]!
+    totalVintageQuantity: BigInt!
+    isCorsiaCompliant: Boolean!
+    isCCPcompliant: Boolean!
+    coBenefits: String!
+    correspondAdjustment: String!
+    additionalCertification: String!
+    # tco2Token: TCO2Token!
+}
+
+# type BatchToken @entity {
+#     id: ID!
+#     creator: User!
+#     owner: User!
+#     projectVintage: ProjectVintage!
+#     serialNumber: String!
+#     quantity: BigInt!
+#     confirmationStatus: Int!
+#     confirmationStatusLastUpdated: BigInt!
+#     timestamp: BigInt!
+#     tx: String!
+#     contentURI: String!
+#     comments: [BatchComment!]!
+#     statusUpdates: [BatchTokenStatusUpdate!]!
+#     aggregated: Boolean!
+# }
+
+# type BatchComment {
+#     id: ID!
+#     sender: User!
+#     batch: BatchToken!
+#     comment: String!
+#     timestamp: BigInt!
+# }
+
+# type BatchTokenStatusUpdate {
+#     id: ID!
+#     updater: User!
+#     oldConfirmationStatus: Int!
+#     newConfirmationStatus: Int!
+#     timestamp: BigInt!
+#     batch: BatchToken!
+# }
+
+# type TCO2Balance {
+#     id: ID!
+#     user: User!
+#     token: TCO2Token!
+#     balance: BigInt!
+# }
+
+# type Redeem {
+#     id: ID!
+#     amount: BigInt!
+#     timestamp: BigInt!
+#     token: TCO2Token!
+#     pool: String!
+#     creator: User!
+# }
+
+# type Retirement {
+#     id: ID!
+#     creationTx: String!
+#     amount: BigInt!
+#     timestamp: BigInt!
+#     token: TCO2Token!
+#     creator: User!
+#     eventId: BigInt!
+#     certificate: RetirementCertificate!
+# }
+
+# type RetirementCertificate {
+#     id: ID!
+#     creationTx: String!
+#     updateTxs: [String!]!
+#     createdAt: BigInt!
+#     retiringEntity: User!
+#     beneficiary: User!
+#     retiringEntityString: String!
+#     beneficiaryString: String!
+#     retirementMessage: String!
+#     retirements: [Retirement!]!
+# }
+
+# type Deposit {
+#     id: ID!
+#     amount: BigInt!
+#     timestamp: BigInt!
+#     token: TCO2Token!
+#     pool: String!
+#     creator: User!
+# }
+
+# type PooledTCO2Token {
+#     id: ID!
+#     token: TCO2Token!
+#     poolAddress: String!
+#     amount: BigInt!
+# }

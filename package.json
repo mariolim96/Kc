@@ -16,7 +16,12 @@
         "dev": "yarn workspaces -pt run dev",
         "build": "yarn workspaces -pt run build",
         "test": "yarn workspaces -pt run test",
-        "build:contracts": "yarn workspace contracts build"
+        "build:contracts": "yarn workspace contracts build",
+        "compile": " yarn workspace contract compile",
+        "deploy": "yarn workspace contract deploy",
+        "deploy:local": "npx hardhat run scripts/deploy.ts --network localhost",
+        "coverage": "hardhat coverage",
+        "chain": "yarn workspace contract  npx hardhat chain"
     },
     "dependencies": {},
     "devDependencies": {}

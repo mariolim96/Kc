@@ -1,0 +1,34 @@
+{
+  "localhost": {
+    "YourContract": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    },
+    "CarbonOffsetFactory": {
+      "address": "0xaC47e91215fb80462139756f43438402998E4A3a"
+    },
+    "CarbonOffsetToken": {
+      "address": "0x32AEb645166a380789F448E7928C22a586D50290"
+    },
+    "CarbonProject": {
+      "address": "0xC66AB83418C20A65C3f8e83B3d11c8C3a6097b6F"
+    },
+    "CarbonTokenizerContract": {
+      "address": "0xeF31027350Be2c7439C1b0BE022d49421488b72C"
+    },
+    "Pool": {
+      "address": "0x9BcC604D4381C5b0Ad12Ff3Bf32bEdE063416BC7"
+    },
+    "PoolFilter": {
+      "address": "0x63fea6E447F120B8Faf85B53cdaD8348e645D80E"
+    },
+    "ProjectVintages": {
+      "address": "0x8F4ec854Dd12F1fe79500a1f53D0cbB30f9b6134"
+    },
+    "Registry": {
+      "address": "0x71089Ba41e478702e1904692385Be3972B2cBf9e"
+    },
+    "RetirementCertificates": {
+      "address": "0xdFdE6B33f13de2CA1A75A6F7169f50541B14f75b"
+    }
+  }
+}

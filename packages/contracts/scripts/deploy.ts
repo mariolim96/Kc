@@ -8,7 +8,7 @@ import {
     keccak256,
     toUtf8Bytes,
 } from 'ethers'
-import { ethers, upgrades } from 'hardhat'
+import { ethers, network, upgrades } from 'hardhat'
 
 import type {
     CarbonOffsetFactory,
@@ -19,6 +19,10 @@ import type {
     CarbonProject__factory,
     CarbonTokenizerContract,
     CarbonTokenizerContract__factory,
+    Pool,
+    Pool__factory,
+    PoolFilter,
+    PoolFilter__factory,
     ProjectVintages,
     ProjectVintages__factory,
     Registry,
@@ -28,21 +32,27 @@ import type {
 } from '../typechain-types'
 import type { ProjectDataStruct, ProjectDataStructOutput } from '../typechain-types/contracts/CarbonProject'
 import type { VintageDataStruct } from '../typechain-types/contracts/Project.vintages.sol/ProjectVintages'
+import { generateDeployments } from './generateDeployments'
 
 const assignRole = (role: string) => {
     return keccak256(toUtf8Bytes(role))
 }
 async function main() {
-    let registry: Registry
-    let registryFactory: ContractFactory<any[], Registry__factory>
+    let Registry: Registry
+    let RegistryFactory: ContractFactory<any[], Registry__factory>
     let ProjectVintages: ProjectVintages
     let ProjectVintagesFactory: ContractFactory<any[], ProjectVintages__factory>
     let CarbonProject: CarbonProject
     let CarbonProjectFactory: ContractFactory<any[], CarbonProject__factory>
-    let retirementCertificates: RetirementCertificates
-    let retirementCertificatesFactory: ContractFactory<any[], RetirementCertificates__factory>
+    let RetirementCertificates: RetirementCertificates
+    let RetirementCertificatesFactory: ContractFactory<any[], RetirementCertificates__factory>
     let carbonTokenizer: CarbonTokenizerContract
     let CarbonTokenizerFactory: ContractFactory<any[], CarbonTokenizerContract__factory>
+    let pool: Pool
+    let poolFactory: ContractFactory<any[], Pool__factory>
+    let poolFilter: PoolFilter
+    let poolFilterFactory: ContractFactory<any[], PoolFilter__factory>
+
     let receipt: ContractTransactionReceipt | null = null
 
     let addr1: HardhatEthersSigner
@@ -54,13 +64,12 @@ async function main() {
 
     ;[addr1, addr2] = await ethers.getSigners()
     // factory
-
-    registryFactory = await ethers.getContractFactory<any[], Registry__factory>('Registry')
-    registry = (await upgrades.deployProxy(registryFactory, [], {
+    RegistryFactory = await ethers.getContractFactory<any[], Registry__factory>('Registry')
+    Registry = (await upgrades.deployProxy(RegistryFactory, [], {
         initializer: 'initialize',
         kind: 'uups',
     })) as Registry & Contract
-    await registry.waitForDeployment()
+    await Registry.waitForDeployment()
 
     ProjectVintagesFactory = await ethers.getContractFactory<any[], ProjectVintages__factory>('ProjectVintages')
     ProjectVintages = (await upgrades.deployProxy(ProjectVintagesFactory, [], {
@@ -89,7 +98,7 @@ async function main() {
         }
     )) as Contract & CarbonTokenizerContract
 
-    retirementCertificatesFactory = await ethers.getContractFactory<any[], RetirementCertificates__factory>(
+    RetirementCertificatesFactory = await ethers.getContractFactory<any[], RetirementCertificates__factory>(
         'RetirementCertificates'
     )
 
@@ -110,19 +119,35 @@ async function main() {
     })) as Contract & CarbonOffsetFactory
     await carbonOffsetToken.waitForDeployment()
 
-    const registryAddress = await registry.getAddress()
+    poolFactory = await ethers.getContractFactory<any[], Pool__factory>('Pool')
+    pool = (await upgrades.deployProxy(poolFactory, [], {
+        initializer: 'initialize',
+        kind: 'uups',
+    })) as Contract & Pool
+    await pool.waitForDeployment()
+
+    poolFilterFactory = await ethers.getContractFactory<any[], PoolFilter__factory>('PoolFilter')
+    poolFilter = (await upgrades.deployProxy(poolFilterFactory, [], {
+        initializer: 'initialize',
+        kind: 'uups',
+    })) as Contract & PoolFilter
+    await poolFilter.waitForDeployment()
+
+    const registryAddress = await Registry.getAddress()
     const projectAddress = await CarbonProject.getAddress()
     const vintageAddress = await ProjectVintages.getAddress()
     const co2TokenAddress = await co2Token.getAddress()
     const carbonOffsetTokenAddress = await carbonOffsetToken.getAddress()
     const carbonTokenizerAddress = await carbonTokenizer.getAddress()
+    const poolAddress = await pool.getAddress()
+    const poolFilterAddress = await poolFilter.getAddress()
 
-    retirementCertificates = (await upgrades.deployProxy(retirementCertificatesFactory, [registryAddress, ''], {
+    RetirementCertificates = (await upgrades.deployProxy(RetirementCertificatesFactory, [registryAddress, ''], {
         initializer: 'initialize',
         kind: 'uups',
     })) as Contract & RetirementCertificates
-    await retirementCertificates.waitForDeployment()
-    const retirementCertificatesAddress = await retirementCertificates.getAddress()
+    await RetirementCertificates.waitForDeployment()
+    const retirementCertificatesAddress = await RetirementCertificates.getAddress()
     console.log({
         registryAddress,
         projectAddress,
@@ -131,15 +156,19 @@ async function main() {
         carbonOffsetTokenAddress,
         retirementCertificatesAddress,
         carbonTokenizerAddress,
+        poolAddress,
+        poolFilterAddress,
     })
     // Set Registry address
-    await registry.setCarbonProjectVintagesAddress(vintageAddress)
-    await registry.setCarbonProjectsAddress(projectAddress)
-    await registry.setCarbonOffsetTokenFactoryAddress(carbonOffsetTokenAddress)
-    await registry.setCarbonOffsetTokenAddress(co2TokenAddress)
-    await registry.setRetirementCertificatesAddress(retirementCertificatesAddress)
-    await registry.setCarbonTokenizerAddress(carbonTokenizerAddress)
+    await Registry.setCarbonProjectVintagesAddress(vintageAddress)
+    await Registry.setCarbonProjectsAddress(projectAddress)
+    await Registry.setCarbonOffsetTokenFactoryAddress(carbonOffsetTokenAddress)
+    await Registry.setCarbonOffsetTokenAddress(co2TokenAddress)
+    await Registry.setRetirementCertificatesAddress(retirementCertificatesAddress)
+    await Registry.setCarbonTokenizerAddress(carbonTokenizerAddress)
 
+    await pool.setFilter(poolFilterAddress)
+    await poolFilter.setToucanContractRegistry(registryAddress)
     await carbonTokenizer.setCarbonRegistryAddress(registryAddress)
     await CarbonProject.setContractRegistry(registryAddress)
     await ProjectVintages.setRegistry(registryAddress)
@@ -147,7 +176,7 @@ async function main() {
     await carbonOffsetToken.setRegistry(registryAddress)
     await carbonOffsetToken.setBeacon(co2TokenAddress)
 
-    await retirementCertificates.setMinValidRetirementAmount(ethers.parseEther('0.00001'))
+    await RetirementCertificates.setMinValidRetirementAmount(ethers.parseEther('0.00001'))
     // add new project
     const project: ProjectDataStruct = {
         projectId: 'test project id',
@@ -191,13 +220,12 @@ async function main() {
         isCorsiaCompliant: true,
         name: 'test name',
         registry: 'test registry',
-        totalVintageQuantity: 1143551,
+        totalVintageQuantity: ethers.parseEther('0.3'),
     }
     const vintageTransaction = await ProjectVintages.addNewVintage(addr1.address, vintage)
     receipt = await vintageTransaction.wait()
     const vintageFilter = ProjectVintages.filters.ProjectVintageMinted()
     const event = await ProjectVintages.queryFilter(vintageFilter, receipt?.blockHash, receipt?.blockNumber)
-    // fractionalize vintage
     await carbonTokenizer.fractionalize(vintage.projectTokenId)
     const tokenDeployedAddress = await carbonOffsetToken.pvIdtoERC20(vintage.projectTokenId)
     const tokenInstance = (await ethers.getContractAt('CarbonOffsetToken', tokenDeployedAddress)) as CarbonOffsetToken &
@@ -210,7 +238,39 @@ async function main() {
         'beneficiary string',
         'retirement message'
     )
+    console.log(await pool.totalSupply())
+    await pool.setSupplyCap(21000000000000000000000000n)
+    const totalSupply = await pool.getRemaining()
+    // console.log('totalSupply:', totalSupply)
+
+    // allow tranfer of tokens to pool
+    await tokenInstance.approve(poolAddress, ethers.parseEther('0.1'))
+    await pool.deposit(tokenDeployedAddress, ethers.parseEther('0.1'))
+    // console.log('totalSupply:', totalSupply)
+    // get current chain id
+    const networkName = network.name
+    const networkChainId = network.config.chainId
+    const addresses = {
+        CarbonOffsetToken: tokenDeployedAddress,
+        CarbonOffsetFactory: carbonOffsetTokenAddress,
+        CarbonProject: projectAddress,
+        ProjectVintages: vintageAddress,
+        Registry: registryAddress,
+        CarbonTokenizerContract: carbonTokenizerAddress,
+        RetirementCertificates: retirementCertificatesAddress,
+        Pool: poolAddress,
+        PoolFilter: poolFilterAddress,
+    }
+    generateDeployments(networkName, networkChainId?.toString() ?? '0', addresses)
+    // abi and addres of registry in an object to be used in the frontend
+    // const registryAbi = registryFactory.interface.format(ethers.FormatTypes.json)
+
+    // return {
+    //     registryAddress,
+    //     registryAbi,
+    // }
 }
+
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 main().catch((error) => {

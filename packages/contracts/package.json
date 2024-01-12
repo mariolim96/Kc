@@ -10,7 +10,7 @@
         "test": "hardhat test ",
         "clean": "hardhat clean",
         "typechain": "hardhat typechain",
-        "node": "npx hardhat node"
+        "chain": "hardhat node"
     },
     "devDependencies": {
         "@ethersproject/abi": "^5.7.0",
